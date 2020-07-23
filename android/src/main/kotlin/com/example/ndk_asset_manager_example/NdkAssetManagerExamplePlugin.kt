@@ -1,6 +1,8 @@
 package com.example.ndk_asset_manager_example
 
+import android.content.res.AssetManager
 import androidx.annotation.NonNull;
+import io.flutter.embedding.engine.loader.FlutterLoader
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -20,6 +22,7 @@ public class NdkAssetManagerExamplePlugin: FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "ndk_asset_manager_example")
     channel.setMethodCallHandler(this);
+    assetManager = flutterPluginBinding.applicationContext.assets
   }
 
   // This static function is optional and equivalent to onAttachedToEngine. It supports the old
@@ -32,16 +35,26 @@ public class NdkAssetManagerExamplePlugin: FlutterPlugin, MethodCallHandler {
   // depending on the user's project. onAttachedToEngine or registerWith must both be defined
   // in the same class.
   companion object {
+    private lateinit var assetManager : AssetManager
+
     @JvmStatic
     fun registerWith(registrar: Registrar) {
       val channel = MethodChannel(registrar.messenger(), "ndk_asset_manager_example")
       channel.setMethodCallHandler(NdkAssetManagerExamplePlugin())
+      assetManager = registrar.context().assets
+    }
+
+    init {
+      System.loadLibrary("ndk_asset_manager_example")
     }
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     if (call.method == "getPlatformVersion") {
       result.success("Android ${android.os.Build.VERSION.RELEASE}")
+    } else if (call.method == "setupAssetManager") {
+      setupAssetManager(assetManager)
+      result.success(null)
     } else {
       result.notImplemented()
     }
@@ -50,4 +63,6 @@ public class NdkAssetManagerExamplePlugin: FlutterPlugin, MethodCallHandler {
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
   }
+
+  private external fun setupAssetManager(assetManager: AssetManager)
 }
